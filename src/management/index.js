@@ -34,6 +34,7 @@ var HooksManager = require('./HooksManager');
 var BrandingManager = require('./BrandingManager');
 var MigrationsManager = require('./MigrationsManager');
 var PromptsManager = require('./PromptsManager');
+var OrganizationsManager = require('./OrganizationsManager');
 
 var BASE_URL_FORMAT = 'https://%s/api/v2';
 var MANAGEMENT_API_AUD_FORMAT = 'https://%s/api/v2/';
@@ -350,6 +351,13 @@ var ManagementClient = function(options) {
    * @type {PromptsManager}
    */
   this.prompts = new PromptsManager(managerOptions);
+
+  /**
+   * Organizations Manager
+   *
+   * @type {OrganizationsManager}
+   */
+  this.organizations = new OrganizationsManager(managerOptions);
 };
 
 /**
@@ -3462,6 +3470,20 @@ utils.wrapPropertyMethod(ManagementClient, 'removeHookSecrets', 'hooks.removeSec
 utils.wrapPropertyMethod(ManagementClient, 'getAccessToken', 'tokenProvider.getAccessToken');
 
 /**
+ * Evict the cached access_token.
+ *
+ * @method    evictCachedAccessToken
+ * @memberOf  module:management.ManagementClient.prototype
+ *
+ * @return {Promise}   Promise returning an access_token.
+ */
+utils.wrapPropertyMethod(
+  ManagementClient,
+  'evictCachedAccessToken',
+  'tokenProvider.evictCachedAccessToken'
+);
+
+/**
  * Update the branding settings.
  *
  * @method    updateBrandingSettings
@@ -3660,5 +3682,10 @@ utils.wrapPropertyMethod(
   'updateCustomTextByLanguage',
   'prompts.updateCustomTextByLanguage'
 );
+
+utils.wrapPropertyMethod(ManagementClient, 'createOrganization', 'organizations.create');
+utils.wrapPropertyMethod(ManagementClient, 'getOrganization', 'organizations.get');
+utils.wrapPropertyMethod(ManagementClient, 'getOrganizations', 'organizations.getAll');
+utils.wrapPropertyMethod(ManagementClient, 'deleteOrganization', 'organizations.delete');
 
 module.exports = ManagementClient;

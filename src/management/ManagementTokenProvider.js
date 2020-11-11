@@ -75,38 +75,39 @@ var ManagementTokenProvider = function(options) {
   this.authenticationClient = new AuthenticationClient(authenticationClientOptions);
 
   var self = this;
-  this.getCachedAccessToken = es6Promisify.promisify(
-    memoizer({
-      load: function(options, callback) {
-        self
-          .clientCredentialsGrant(options.domain, options.scope, options.audience)
-          .then(function(data) {
-            callback(null, data);
-          })
-          .catch(function(err) {
-            callback(err);
-          });
-      },
-      hash: function(options) {
-        return options.domain + '-' + options.clientId + '-' + options.scope;
-      },
-      itemMaxAge: function(options, data) {
-        if (options.cacheTTLInSeconds) {
-          return options.cacheTTLInSeconds * 1000;
-        }
+  const memoizedGrant = memoizer({
+    load: function(options, callback) {
+      self
+        .clientCredentialsGrant(options.domain, options.scope, options.audience)
+        .then(function(data) {
+          callback(null, data);
+        })
+        .catch(function(err) {
+          callback(err);
+        });
+    },
+    hash: function(options) {
+      return options.domain + '-' + options.clientId + '-' + options.scope;
+    },
+    itemMaxAge: function(options, data) {
+      if (options.cacheTTLInSeconds) {
+        return options.cacheTTLInSeconds * 1000;
+      }
 
-        // if the expires_in is lower than 10 seconds, do not subtract 10 additional seconds.
-        if (data.expires_in && data.expires_in < 10 /* seconds */) {
-          return data.expires_in * 1000;
-        } else if (data.expires_in) {
-          // Subtract 10 seconds from expires_in to fetch a new one, before it expires.
-          return data.expires_in * 1000 - 10000 /* milliseconds */;
-        }
-        return 60 * 60 * 1000; //1h
-      },
-      max: 100
-    })
-  );
+      // if the expires_in is lower than 10 seconds, do not subtract 10 additional seconds.
+      if (data.expires_in && data.expires_in < 10 /* seconds */) {
+        return data.expires_in * 1000;
+      } else if (data.expires_in) {
+        // Subtract 10 seconds from expires_in to fetch a new one, before it expires.
+        return data.expires_in * 1000 - 10000 /* milliseconds */;
+      }
+      return 60 * 60 * 1000; //1h
+    },
+    max: 100
+  });
+
+  this.getCachedAccessToken = es6Promisify.promisify(memoizedGrant);
+  this.evictCachedAccessToken = () => memoizedGrant.reset();
 };
 
 /**
